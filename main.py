@@ -23,7 +23,7 @@ class Agent:
 
 
 # Ejecutar simulación de Frogger 
-def run_frogger_simulation(steps=1000, render_mode="human", solution_type="DQN", model_path=None):
+def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Random", model_path=None):
 
     # Crear entorno de Frogger
     gym.register_envs(ale_py) # registrar entornos de ALE
