@@ -1,5 +1,6 @@
 import gymnasium as gym
 import ale_py
+import numpy as np
 from DQN import AgentDQN
 from Random import AgentRandom
 
@@ -12,14 +13,25 @@ class Agent:
     # El agente elige una solución basada en el tipo de solución proporcionado
     def __init__(self, solution_type="DQN", model_path=None):
         if solution_type == "DQN": # Si la solución es DQN, se crea un agente DQN
-            self.model = AgentDQN(model_path)
+            self.model = AgentDQN()
         elif solution_type == "Random": # Si la solución es Random, se crea un agente Random
             self.model = AgentRandom()
         else:
             self.model = None
 
-    def choose_action(self, observation):
-        return self.model.choose_action(observation)
+    def choose_action(self, observation, deterministic=False):
+        return self.model.choose_action(observation, deterministic)
+    
+    def store_transition(self, state, action, reward, new_state, done):
+        self.model.store_transition(state, action, reward, new_state, done)
+    def learn(self):
+        self.model.learn()
+    def update_target_network(self):
+        self.model.update_target_network()
+    def save_memory(self, state, action, reward, new_state, done):
+        self.model.save_memory(state, action, reward, new_state, done)
+    def update_target_network(self):
+        self.model.update_target()
 
 
 # Ejecutar simulación de Frogger 
@@ -72,6 +84,54 @@ def evaluate_solutions():
         # placeholder
         continue
 
+def train_agent(solution_type, num_episodes, action_mapping):
+    # Crear entorno de Frogger
+    gym.register_envs(ale_py) # registrar entornos de ALE
+    env = gym.make("ALE/Frogger-v5", obs_type="rgb") # seleccionar entorno de Frogger
+    env = gym.wrappers.FrameStackObservation(env, 4) # apilar 4 fotogramas para capturar el movimiento
+    # crear agente con la solución proporcionada
+    agent = Agent(solution_type)
+
+    greedy_count = 0 # contador de acciones greedy
+    rewards = [] # lista de recompensas
+    # Entrenar agente
+    for episode in range(num_episodes):
+        observation, info = env.reset() # reiniciar entorno
+        done = False
+        total_reward = 0
+
+        step_num = 0
+        while not done:
+            if(step_num%150 == 0):
+                greedy_count += 10
+                step_num += 1
+
+            if(greedy_count > 0):
+                action = agent.choose_action(observation, deterministic = True)
+                greedy_count -= 1
+            else:
+                action = agent.choose_action(observation)
+                step_num +=1
+            observation_, reward, terminated, truncated, info = env.step(action_mapping[action])
+            done = terminated or truncated
+            total_reward += reward
+            agent.store_transition(observation, action, reward, observation_, done)
+            agent.learn()
+            observation = observation_
+        
+        agent.update_target_network()
+        rewards.append(total_reward)
+        avg = np.mean(rewards[-100:])
+        print(f"Episode {episode+1}/{num_episodes}: Total Reward: {total_reward}, Average Reward: {avg}")
+
+        # Imprimir resultados del episodio
+        print(f"Episode {episode+1}/{num_episodes}: Total Reward: {total_reward}")
+
+    env.close()
+
+
 
 if __name__ == "__main__":
-    evaluate_solutions()
+    # evaluate_solutions()
+    action_mapping = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4}
+    train_agent("DQN", 1000, action_mapping)
