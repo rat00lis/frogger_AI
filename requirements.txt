@@ -1,3 +1,5 @@
 gymnasium
 ale-py
 torch
+opencv-python
+matplotlib

@@ -45,6 +45,7 @@ class Agent:
         return self.model.choose_action(observation, deterministic)
 
 def train_agent(solution_type, num_episodes, action_mapping, file_path="model", config=None, plot=False):
+    print(f"Training agent with solution type: {solution_type}") 
     # Crear entorno de Frogger
     gym.register_envs(ale_py) # registrar entornos de ALE
     env = gym.make("ALE/Frogger-v5", obs_type="rgb") # seleccionar entorno de Frogger
@@ -89,8 +90,9 @@ def train_agent(solution_type, num_episodes, action_mapping, file_path="model", 
         # Imprimir resultados del episodio
         print(f"Episode {episode+1}/{num_episodes}: Total Reward: {total_reward}")
 
+    
+    env.reset()
     env.close()
-
     # Save model
     agent.model.save(file_path)
 
@@ -102,7 +104,7 @@ def train_agent(solution_type, num_episodes, action_mapping, file_path="model", 
         plt.ylabel('Average Reward')
         plt.title('Learning Curve')
         plt.savefig(f"{file_path}_learning_curve.png")
-        plt.show()
+        # plt.show()
 
 if __name__ == "__main__":
     action_mapping1 = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4}
@@ -128,8 +130,8 @@ if __name__ == "__main__":
     config2 = {
         "learning_rate": 0.001,
         "gamma": 0.99,
-        "epsilon": 1.0,
-        "epsilon_min": 0.1,
+        "epsilon": 0.5,
+        "epsilon_min": 0.05,
         "epsilon_decay": 0.9995,
         "batch_size": 32,
         "n_actions": 5,
@@ -142,5 +144,7 @@ if __name__ == "__main__":
         "device": None,
     }
 
-    train_agent("DQN", 10000, action_mapping1, "action_mapping1", config1, plot=True)
-    train_agent("DQN", 10000, action_mapping2, "action_mapping2", config2, plot=True)
+    train_agent("DQN", 10, action_mapping1, "action_mapping1", config1, plot=True)
+    print("trained agent 1")
+    train_agent("DQN", 10, action_mapping2, "action_mapping2", config2, plot=True)
+    print("trained agent 2")    
