@@ -112,6 +112,9 @@ class AgentDQN:
 
         self.action_mapping = action_mapping
 
+        # Learning rate scheduler
+        self.scheduler = optim.lr_scheduler.StepLR(self.model.optimizer, step_size=1000, gamma=0.9)
+
     def save_memory(self, state, action, reward, new_state, done):
         # Guardar la memoria de repetición
         index = self.memory_counter % self.memory_size
@@ -172,8 +175,10 @@ class AgentDQN:
         loss.backward()
         self.model.optimizer.step()
 
-    
-    def evaluate(self, env, num_episodes=10,debug=False):
+        # Step the learning rate scheduler
+        self.scheduler.step()
+
+    def evaluate(self, env, num_episodes=10, debug=False):
         self.model.eval()
         with torch.no_grad():
             rewards = []
@@ -188,7 +193,7 @@ class AgentDQN:
                     observation = observation_
                 rewards.append(reward)
             avg = np.mean(rewards)
-            if(debug):
+            if debug:
                 print(f"Average reward: {avg}")
                 print(f"Rewards: {rewards}")
         self.model.train()
@@ -206,5 +211,3 @@ class AgentDQN:
         path = path + ".pt"
         self.model.load_state_dict(torch.load(path))
         print(f"Model loaded from {path}")
-
-    
