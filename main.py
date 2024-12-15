@@ -44,6 +44,57 @@ class Agent:
     def choose_action(self, observation, deterministic=False):
         return self.model.choose_action(observation, deterministic)
 
+
+# Ejecutar simulación de Frogger 
+def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Random", model_path=None):
+
+    # Crear entorno de Frogger
+    gym.register_envs(ale_py) # registrar entornos de ALE
+    env = gym.make("ALE/Frogger-v5", render_mode=render_mode) # seleccionar entorno de Frogger
+    observation, info = env.reset() # reiniciar entorno
+    
+    # crear agente con la solución proporcionada
+    agent = Agent(solution_type, model_path)
+
+    # ejecutar simulación
+    for _ in range(steps): 
+        # El agente elige una accion basada en la observación del estado actual del juego
+        action = agent.choose_action(observation) 
+        # El entorno toma la accion con .step() y devuelve:
+        # - la observación del estado actual
+        # - la recompensa obtenida
+        # - si el juego ha terminado (la rana murio o llego al final)
+        # - si el juego ha sido truncado (se ha alcanzado el límite de pasos)
+        # - información adicional (metadatos)
+        observation, reward, terminated, truncated, info = env.step(action) 
+
+        # Si el juego ha terminado o ha sido truncado, reiniciar el entorno
+        if terminated or truncated:
+            observation, info = env.reset()
+
+    env.close()
+
+    # Funcion comparadora de soluciones
+def evaluate_solutions():
+    results = {}
+
+    for solution in solutions:
+        # Ejecutamos una simulación de Frogger para cada solución
+        run_frogger_simulation(solution_type=solution)
+        
+        ##PLACEHOLDER##: Calcular métricas de rendimiento para cada solución
+        # Las métricas pueden incluir:
+        # - Puntaje total
+        # - Tiempo de ejecución
+        # - Número de vidas restantes
+        # - Número de pasos realizados, etc
+
+    # Aqui compararemos las soluciones y mostraremos los resultados
+    for solution, metrics in results.items():
+        # placeholder
+        continue
+
+
 def train_agent(solution_type, num_episodes, action_mapping, file_path="model", config=None, plot=False):
     print(f"Training agent with solution type: {solution_type}") 
     # Crear entorno de Frogger
@@ -107,44 +158,4 @@ def train_agent(solution_type, num_episodes, action_mapping, file_path="model", 
         # plt.show()
 
 if __name__ == "__main__":
-    action_mapping1 = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4}
-    action_mapping2 = {0:0, 1:1, 2:4, 3:3, 4:2}
-
-    config1 = {
-        "learning_rate": 0.1,
-        "gamma": 0.99,
-        "epsilon": 1.0,
-        "epsilon_min": 0.1,
-        "epsilon_decay": 0.9995,
-        "batch_size": 32,
-        "n_actions": 5,
-        "num_channels": 4,
-        "input_dimension_x": 84,
-        "input_dimension_y": 84,
-        "fc1_dimension": 512,
-        "fc2_dimension": 512,
-        "memory_size": 1000,
-        "device": None,
-    }
-
-    config2 = {
-        "learning_rate": 0.001,
-        "gamma": 0.99,
-        "epsilon": 0.5,
-        "epsilon_min": 0.05,
-        "epsilon_decay": 0.9995,
-        "batch_size": 32,
-        "n_actions": 5,
-        "num_channels": 4,
-        "input_dimension_x": 84,
-        "input_dimension_y": 84,
-        "fc1_dimension": 512,
-        "fc2_dimension": 512,
-        "memory_size": 1000,
-        "device": None,
-    }
-
-    train_agent("DQN", 10, action_mapping1, "action_mapping1", config1, plot=True)
-    print("trained agent 1")
-    train_agent("DQN", 10, action_mapping2, "action_mapping2", config2, plot=True)
-    print("trained agent 2")    
+    run_frogger_simulation(1000,solution_type="DQN",model_path="agent1")
