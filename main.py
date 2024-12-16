@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from DQN import AgentDQN
 from Random import AgentRandom
+from Genetic import GeneticAgent
 import time
 import csv
 from tqdm import tqdm
@@ -38,6 +39,11 @@ class Agent:
                     self.model = AgentDQN()
         elif solution_type == "Random": # Si la solución es Random, se crea un agente Random
             self.model = AgentRandom()
+        elif solution_type == "Genetic":
+            print("Genetic")
+            if model_path:
+                self.model = GeneticAgent(input_channels=1, output_size=5)
+                self.model.load(model_path)
         else:
             self.model = None
 
@@ -55,7 +61,7 @@ def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Rando
     
     score = 0
     # crear agente con la solución proporcionada
-    agent = Agent(solution_type, model_path)
+    agent = Agent(solution_type=solution_type, model_path=model_path)
     done = False
     won = False
     actions = 0
@@ -64,7 +70,7 @@ def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Rando
     while not done:
         actions += 1
         # El agente elige una accion basada en la observación del estado actual del juego
-        action = agent.choose_action(observation) 
+        action = agent.choose_action(observation, deterministic=True) 
         # print(action)
         # El entorno toma la accion con .step() y devuelve:
         # - la observación del estado actual
@@ -72,7 +78,7 @@ def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Rando
         # - si el juego ha terminado (la rana murio o llego al final)
         # - si el juego ha sido truncado (se ha alcanzado el límite de pasos)
         # - información adicional (metadatos)
-        observation, reward, terminated, truncated, info = env.step(action) 
+        next_observation, reward, terminated, truncated, info = env.step(action) 
         #print current frog position
         # print(f"{observation}\n\n\n")
         # Si el juego ha terminado o ha sido truncado, reiniciar el entorno
@@ -84,7 +90,7 @@ def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Rando
             observation, info = env.reset()
             done = True # terminar simulación
             score = reward
-            
+        observation = next_observation
 
 
     env.close()
@@ -225,6 +231,7 @@ if __name__ == "__main__":
     # run_frogger_simulation(1000,solution_type="DQN",model_path="action_mapping1")
     solutions = [
         { "name": "DQN", "model_path": "wololo"},
+        { "name": "Genetic", "model_path": "best_agent.pt"},
         { "name": "Random", "model_path": None}
     ]
     evaluate_solutions(solutions, iteraciones=100)
