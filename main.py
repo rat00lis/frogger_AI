@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from DQN import AgentDQN
 from Random import AgentRandom
-
-# Soluciones actuales
-solutions = ["DQN", "Random"]
+import time
+import csv
+from tqdm import tqdm
 
 class Agent:
     # El agente elige una solución basada en el tipo de solución proporcionado
@@ -53,13 +53,18 @@ def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Rando
     env = gym.make("ALE/Frogger-v5", render_mode=render_mode) # seleccionar entorno de Frogger
     observation, info = env.reset() # reiniciar entorno
     
+    score = 0
     # crear agente con la solución proporcionada
     agent = Agent(solution_type, model_path)
-
+    done = False
+    won = False
+    actions = 0
     # ejecutar simulación
-    for _ in range(steps): 
+    while not done:
+        actions += 1
         # El agente elige una accion basada en la observación del estado actual del juego
         action = agent.choose_action(observation) 
+        # print(action)
         # El entorno toma la accion con .step() y devuelve:
         # - la observación del estado actual
         # - la recompensa obtenida
@@ -67,32 +72,88 @@ def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Rando
         # - si el juego ha sido truncado (se ha alcanzado el límite de pasos)
         # - información adicional (metadatos)
         observation, reward, terminated, truncated, info = env.step(action) 
-
+        #print current frog position
+        # print(f"{observation}\n\n\n")
         # Si el juego ha terminado o ha sido truncado, reiniciar el entorno
         if terminated or truncated:
+            if info["lives"] > 0:
+                won = True
             observation, info = env.reset()
+            done = True # terminar simulación
+            score = reward
+            
+
 
     env.close()
+    return score, won, actions
 
     # Funcion comparadora de soluciones
-def evaluate_solutions():
-    results = {}
+def evaluar_soluciones(solutions, iteraciones=1000):
+    resultados = {}
 
     for solution in solutions:
         # Ejecutamos una simulación de Frogger para cada solución
-        run_frogger_simulation(solution_type=solution)
+        puntaje_promedio = 0
+        veces_ganadas = 0
+        puntaje_maximo = 0
+        acciones_promedio = 0
+        for _ in tqdm(range(iteraciones), desc=f"Evaluando {solution['name']}"):
+            puntaje, ganado, acciones = run_frogger_simulation(solution_type=solution["name"], model_path=solution["model_path"], render_mode="rgb_array")
+            puntaje_promedio += puntaje
+            acciones_promedio += acciones
+            if puntaje > puntaje_maximo:
+                puntaje_maximo = puntaje
+            if ganado:
+                veces_ganadas += 1
         
-        ##PLACEHOLDER##: Calcular métricas de rendimiento para cada solución
-        # Las métricas pueden incluir:
-        # - Puntaje total
-        # - Tiempo de ejecución
-        # - Número de vidas restantes
-        # - Número de pasos realizados, etc
+        puntaje_promedio /= iteraciones
+        porcentaje_ganado = veces_ganadas / iteraciones
+        acciones_promedio /= iteraciones
+        resultados[solution["name"]] = {"puntaje_promedio": puntaje_promedio, "puntaje_maximo": puntaje_maximo, "porcentaje_ganado": porcentaje_ganado, "acciones_promedio": acciones_promedio}
 
-    # Aqui compararemos las soluciones y mostraremos los resultados
-    for solution, metrics in results.items():
-        # placeholder
-        continue
+    # Guardar resultados en un archivo CSV
+    with open('resultados_evaluacion.csv', mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Solución", "Puntaje Promedio", "Puntaje Máximo", "Porcentaje Ganado", "Acciones Promedio"])
+        for solution, metrics in resultados.items():
+            writer.writerow([solution, metrics["puntaje_promedio"], metrics["puntaje_maximo"], metrics["porcentaje_ganado"], metrics["acciones_promedio"]])
+
+    # Graficar resultados
+    nombres_soluciones = [solution for solution in resultados.keys()]
+    puntajes_promedio = [metrics["puntaje_promedio"] for metrics in resultados.values()]
+    puntajes_maximos = [metrics["puntaje_maximo"] for metrics in resultados.values()]
+    porcentajes_ganados = [metrics["porcentaje_ganado"] for metrics in resultados.values()]
+    acciones_promedio = [metrics["acciones_promedio"] for metrics in resultados.values()]
+
+    plt.figure(figsize=(12, 8))
+
+    plt.subplot(2, 2, 1)
+    plt.bar(nombres_soluciones, puntajes_promedio, color='blue')
+    plt.xlabel('Soluciones')
+    plt.ylabel('Puntaje Promedio')
+    plt.title('Puntaje Promedio por Solución')
+
+    plt.subplot(2, 2, 2)
+    plt.bar(nombres_soluciones, puntajes_maximos, color='green')
+    plt.xlabel('Soluciones')
+    plt.ylabel('Puntaje Máximo')
+    plt.title('Puntaje Máximo por Solución')
+
+    plt.subplot(2, 2, 3)
+    plt.bar(nombres_soluciones, porcentajes_ganados, color='red')
+    plt.xlabel('Soluciones')
+    plt.ylabel('Porcentaje Ganado')
+    plt.title('Porcentaje Ganado por Solución')
+
+    plt.subplot(2, 2, 4)
+    plt.bar(nombres_soluciones, acciones_promedio, color='purple')
+    plt.xlabel('Soluciones')
+    plt.ylabel('Acciones Promedio')
+    plt.title('Acciones Promedio por Solución')
+
+    plt.tight_layout()
+    plt.savefig('resultados_evaluacion.png')
+    plt.show()
 
 
 def train_agent(solution_type, num_episodes, action_mapping, file_path="model", config=None, plot=False):
@@ -158,4 +219,9 @@ def train_agent(solution_type, num_episodes, action_mapping, file_path="model", 
         # plt.show()
 
 if __name__ == "__main__":
-    run_frogger_simulation(1000,solution_type="DQN",model_path="agent1")
+    # run_frogger_simulation(1000,solution_type="DQN",model_path="action_mapping1")
+    solutions = [
+        { "name": "DQN", "model_path": "agent1"},
+        { "name": "Random", "model_path": None}
+    ]
+    evaluate_solutions(solutions, iterations=100)
