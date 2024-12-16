@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from Common import preprocess_observation
-from mainNeuralNetwork import GeneticAgent
+from Genetic import GeneticAgent
 
 def visualize_agent(agent, steps=1000):
     gym.register_envs(ale_py)
