@@ -60,6 +60,7 @@ def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Rando
     won = False
     actions = 0
     # ejecutar simulación
+    total_reward = 0
     while not done:
         actions += 1
         # El agente elige una accion basada en la observación del estado actual del juego
