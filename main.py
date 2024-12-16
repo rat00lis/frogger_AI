@@ -75,6 +75,8 @@ def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Rando
         #print current frog position
         # print(f"{observation}\n\n\n")
         # Si el juego ha terminado o ha sido truncado, reiniciar el entorno
+        total_reward += reward
+        # print(f"Score: {score}, Reward: {reward}, Lives: {info['lives']}, action: {action}") 
         if terminated or truncated:
             if info["lives"] > 0:
                 won = True
@@ -85,10 +87,10 @@ def run_frogger_simulation(steps=1000, render_mode="human", solution_type="Rando
 
 
     env.close()
-    return score, won, actions
+    return total_reward, won, actions
 
     # Funcion comparadora de soluciones
-def evaluar_soluciones(solutions, iteraciones=1000):
+def evaluate_solutions(solutions, iteraciones=1000):
     resultados = {}
 
     for solution in solutions:
@@ -221,7 +223,7 @@ def train_agent(solution_type, num_episodes, action_mapping, file_path="model", 
 if __name__ == "__main__":
     # run_frogger_simulation(1000,solution_type="DQN",model_path="action_mapping1")
     solutions = [
-        { "name": "DQN", "model_path": "agent1"},
+        { "name": "DQN", "model_path": "wololo"},
         { "name": "Random", "model_path": None}
     ]
-    evaluate_solutions(solutions, iterations=100)
+    evaluate_solutions(solutions, iteraciones=100)
